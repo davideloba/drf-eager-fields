@@ -10,6 +10,9 @@ def is_one_serializer(serializer):
 def is_serializer(serializer):
     return is_one_serializer(serializer) or is_many_serializer(serializer)
 
+def is_model_serializer(serializer):
+    return isinstance(serializer, serializers.ModelSerializer)
+
 
 def get_key_and_list(keys):
     """
