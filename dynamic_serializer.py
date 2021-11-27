@@ -49,28 +49,6 @@ def recursive_exclude(fields, exclude_keys):
     return fields
 
 
-def recursive_extra(serializer, extra_keys):
-    # TODO: use dict instead of list
-    extra_key, remaining_extra_keys = get_key_and_list(extra_keys)
-
-    is_many = is_many_serializer(serializer)
-    
-    if is_many:
-        extra_field = serializer.child.extra_fields.get(extra_key, None)
-    else:
-        extra_field = serializer.extra_fields.get(extra_key, None)
-    if extra_field is None:
-        return None
-
-    if len(remaining_extra_keys) and is_serializer(extra_field.get('field', None)):
-        recursive_extra(extra_field['field'], remaining_extra_keys)
-    
-    if is_many:
-        serializer.child.fields[extra_key] = extra_field['field']
-    else:
-        serializer.fields[extra_key] = extra_field['field']
-
-
 class DynamicSerializer(serializers.Serializer):
 
     def __init__(self, *args, **kwargs):
@@ -83,17 +61,15 @@ class DynamicSerializer(serializers.Serializer):
 
         super().__init__(*args, **kwargs)
 
-        if self.context.get('extra_fields'):
-            # extra_key_list = [f.strip() for f in self.context.get('extra_fields').split(',')]
-            # for extra_keys in extra_key_list:
-            #     recursive_extra(self, extra_keys)
-            extra_fields_dict = self.context_to_dict(self.context.get('extra_fields'))
-            self.set_extra_fields(self, extra_fields_dict)
+        extra_fields_context = self.context.get('extra_fields', None)
+        if extra_fields_context:
+            extra_fields_dict = self.context_to_dict(extra_fields_context)
+            self.__class__.set_extra_fields(self, extra_fields_dict)
 
-        if self.context.get('exclude_fields'):
-            exclude_keys_list = [f.strip() for f in self.context.get('exclude_fields').split(',')]
-            for exclude_keys in exclude_keys_list:
-                recursive_exclude(self.fields, exclude_keys)
+        exclude_fields_context = self.context.get('exclude_fields', None)
+        if exclude_fields_context:
+            exclude_fields_dict = self.context_to_dict(exclude_fields_context)
+            self.__class__.set_exclude_fields(self, exclude_fields_dict)
 
         if self.context.get('only_fields'):
             only_keys_dict = self.context_to_dict(self.context.get('only_fields'))
@@ -104,13 +80,9 @@ class DynamicSerializer(serializers.Serializer):
     @classmethod
     def set_extra_fields(cls, serializer, extra_fields_dict):
 
-        if not is_serializer(serializer):
-            return # this should never occur
-        
-        if is_many_serializer(serializer):
-            cur_ser = serializer.child # unplack if many
-        else:
-            cur_ser = serializer
+        cur_ser = cls._get_cur_ser(serializer)
+        if not cur_ser:
+            return
 
         kk = extra_fields_dict.keys()
         for k in kk:
@@ -125,7 +97,7 @@ class DynamicSerializer(serializers.Serializer):
             if not extra_field:
                 continue
 
-            # empty dict is False, then True means this is not a dict leaf
+            # empty dict is False then True means this is not a dict leaf
             # so go deeper if it's a serializer
             nested_dict = extra_fields_dict[k]
             nested_field = extra_field.get('field', None)
@@ -134,6 +106,31 @@ class DynamicSerializer(serializers.Serializer):
 
             # now append the extra field
             cur_ser.fields[k] = extra_field['field']
+
+
+    @classmethod
+    def set_exclude_fields(cls, serializer, exclude_fields_dict):
+
+        cur_ser = cls._get_cur_ser(serializer)
+        if not cur_ser:
+            return
+
+        kk = exclude_fields_dict.keys()
+        for k in kk:
+            nested_dict = exclude_fields_dict[k]
+            nested_field = cur_ser.fields.get(k, None)
+            if nested_dict and is_serializer(nested_field):  
+                cls.set_exclude_fields(nested_field, nested_dict)
+            else:
+                if k in cur_ser.fields: # leaf, remove it
+                    cur_ser.fields.pop(k)
+
+
+    @classmethod
+    def _get_cur_ser(cls, serializer):
+        if not is_serializer(serializer):
+            return None # this should never occur
+        return serializer.child if is_many_serializer(serializer) else serializer
 
 
     def _set_only(self, fields, only_keys_dict):
@@ -157,7 +154,7 @@ class DynamicSerializer(serializers.Serializer):
             fields.pop(x)
 
         return fields
-        
+
     def context_to_dict(self, context) -> dict:
         """
         Get string params from context
