@@ -84,9 +84,11 @@ class DynamicSerializer(serializers.Serializer):
         super().__init__(*args, **kwargs)
 
         if self.context.get('extra_fields'):
-            extra_key_list = [f.strip() for f in self.context.get('extra_fields').split(',')]
-            for extra_keys in extra_key_list:
-                recursive_extra(self, extra_keys)
+            # extra_key_list = [f.strip() for f in self.context.get('extra_fields').split(',')]
+            # for extra_keys in extra_key_list:
+            #     recursive_extra(self, extra_keys)
+            extra_fields_dict = self.context_to_dict(self.context.get('extra_fields'))
+            self.set_extra_fields(self, extra_fields_dict)
 
         if self.context.get('exclude_fields'):
             exclude_keys_list = [f.strip() for f in self.context.get('exclude_fields').split(',')]
@@ -94,12 +96,45 @@ class DynamicSerializer(serializers.Serializer):
                 recursive_exclude(self.fields, exclude_keys)
 
         if self.context.get('only_fields'):
-            only_keys_list = self._strings_to_list('only_fields')
-            only_keys_dict = dict()
-            for only_keys in only_keys_list:
-                self._list_to_dict(only_keys, only_keys_dict)
+            only_keys_dict = self.context_to_dict(self.context.get('only_fields'))
             if only_keys_dict:
                 self._set_only(self.fields, only_keys_dict)
+
+
+    @classmethod
+    def set_extra_fields(cls, serializer, extra_fields_dict):
+
+        if not is_serializer(serializer):
+            return # this should never occur
+        
+        if is_many_serializer(serializer):
+            cur_ser = serializer.child # unplack if many
+        else:
+            cur_ser = serializer
+
+        kk = extra_fields_dict.keys()
+        for k in kk:
+
+            # maybe this serializer doesn't define the extra_field property
+            if not cur_ser.extra_fields:
+                continue
+
+            extra_field = cur_ser.extra_fields.get(k, None)
+            
+            # extra field is not an extra fields of the serializer
+            if not extra_field:
+                continue
+
+            # empty dict is False, then True means this is not a dict leaf
+            # so go deeper if it's a serializer
+            nested_dict = extra_fields_dict[k]
+            nested_field = extra_field.get('field', None)
+            if nested_dict and is_serializer(nested_field):  
+                cls.set_extra_fields(nested_field, nested_dict)
+
+            # now append the extra field
+            cur_ser.fields[k] = extra_field['field']
+
 
     def _set_only(self, fields, only_keys_dict):
         """
@@ -123,10 +158,21 @@ class DynamicSerializer(serializers.Serializer):
 
         return fields
         
-    def _strings_to_list(self, key):
-        return [f.strip() for f in self.context.get(key).split(',')]
+    def context_to_dict(self, context) -> dict:
+        """
+        Get string params from context
+        and merge them in a nested dict
+        """
+        l = self._string_to_list(context)
+        d = dict()
+        for kk in l:
+            self._list_to_dict(kk, d)
+        return d
 
-    def _list_to_dict(self, keys, store_dict=dict()):
+    def _string_to_list(self, context) -> list:
+        return [f.strip() for f in context.split(',')]
+
+    def _list_to_dict(self, keys, store_dict=dict()) -> dict:
         """
         take a list of elements and merge them in a nested dict.
         Append the result if key already exists.
