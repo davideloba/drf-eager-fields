@@ -14,50 +14,9 @@ def is_model_serializer(serializer):
     return isinstance(serializer, serializers.ModelSerializer)
 
 
-def get_key_and_list(keys):
-    """
-    take the list of keys and 
-    return the first one and the list without it
-    """
-
-    # convert str to list, just the first run
-    if isinstance(keys, str):
-        keys = keys.split('.')
-
-    # empty list, return
-    if not len(keys):
-        return None, []
-
-    key = keys.pop(0)
-    return key, keys
-
-
-def recursive_exclude(fields, exclude_keys):
-    # TODO: use dict instead of list
-    exclude_key, remaining_exclude_keys = get_key_and_list(exclude_keys)
-
-    if exclude_key in fields:
-        field = fields.get(exclude_key)
-    else:
-        return None
-
-    if len(remaining_exclude_keys) and is_serializer(field):
-        return recursive_exclude(field.child.fields if is_many_serializer(field) else field.fields, remaining_exclude_keys)
-    else:
-        fields.pop(exclude_key)
-
-    return fields
-
-
 class DynamicSerializer(serializers.Serializer):
 
     def __init__(self, *args, **kwargs):
-        """
-        As suggested by DRF, we modify fields
-        in the constructor of the serializer
-
-        see https://www.django-rest-framework.org/api-guide/serializers/#dynamically-modifying-fields
-        """
 
         super().__init__(*args, **kwargs)
 
@@ -71,10 +30,10 @@ class DynamicSerializer(serializers.Serializer):
             exclude_fields_dict = self.context_to_dict(exclude_fields_context)
             self.__class__.set_exclude_fields(self, exclude_fields_dict)
 
-        if self.context.get('only_fields'):
-            only_keys_dict = self.context_to_dict(self.context.get('only_fields'))
-            if only_keys_dict:
-                self._set_only(self.fields, only_keys_dict)
+        only_fields_context = self.context.get('only_fields', None)
+        if only_fields_context:
+            only_fields_dict = self.context_to_dict(only_fields_context)
+            self.__class__.set_only_fields(self, only_fields_dict)
 
 
     @classmethod
@@ -127,33 +86,32 @@ class DynamicSerializer(serializers.Serializer):
 
 
     @classmethod
+    def set_only_fields(cls, serializer, only_fields_dict):
+
+        cur_ser = cls._get_cur_ser(serializer)
+        if not cur_ser:
+            return
+
+        kk = only_fields_dict.keys()
+        for k in kk:
+            nested_dict = only_fields_dict[k]
+            nested_field = cur_ser.fields.get(k, None)
+            if nested_dict and is_serializer(nested_field):  
+                cls.set_only_fields(nested_field, nested_dict)
+
+        to_keep = set(kk)
+        existing = set(cur_ser.fields.keys())
+
+        for x in existing - to_keep:
+            cur_ser.fields.pop(x)
+
+
+    @classmethod
     def _get_cur_ser(cls, serializer):
         if not is_serializer(serializer):
             return None # this should never occur
         return serializer.child if is_many_serializer(serializer) else serializer
 
-
-    def _set_only(self, fields, only_keys_dict):
-        """
-        remove fields not in the only_keys dict
-        """
-        kk = only_keys_dict.keys()
-        for k in kk:
-            if only_keys_dict[k]: # empty dict is False
-                if k in fields:
-                    field = fields.get(k)
-                else:
-                    continue
-                if is_serializer(field):
-                    self._set_only(field.child.fields if is_many_serializer(field) else field.fields, only_keys_dict[k])
-
-        to_keep = set(kk)
-        existing = set(fields.keys())
-
-        for x in existing - to_keep:
-            fields.pop(x)
-
-        return fields
 
     def context_to_dict(self, context) -> dict:
         """
@@ -166,8 +124,10 @@ class DynamicSerializer(serializers.Serializer):
             self._list_to_dict(kk, d)
         return d
 
+
     def _string_to_list(self, context) -> list:
         return [f.strip() for f in context.split(',')]
+
 
     def _list_to_dict(self, keys, store_dict=dict()) -> dict:
         """
@@ -192,7 +152,7 @@ class DynamicSerializer(serializers.Serializer):
             }
         }
         """
-        item, remaing_list = get_key_and_list(keys)
+        item, remaing_list = self._get_key_and_list(keys)
         if not len(remaing_list):
             if not item in store_dict:
                 store_dict[item] = dict()
@@ -202,3 +162,21 @@ class DynamicSerializer(serializers.Serializer):
             else:
                 store_dict[item] = dict(dict(), **store_dict[item])
             self._list_to_dict(remaing_list, store_dict[item])
+
+
+    def _get_key_and_list(self, keys):
+        """
+        take the list of keys and 
+        return the first one and the list without it
+        """
+
+        # convert str to list, just the first run
+        if isinstance(keys, str):
+            keys = keys.split('.')
+
+        # empty list, return
+        if not len(keys):
+            return None, []
+
+        key = keys.pop(0)
+        return key, keys
