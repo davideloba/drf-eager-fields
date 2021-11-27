@@ -20,20 +20,25 @@ class DynamicSerializer(serializers.Serializer):
 
         super().__init__(*args, **kwargs)
 
-        extra_fields_context = self.context.get('extra_fields', None)
-        if extra_fields_context:
-            extra_fields_dict = self.context_to_dict(extra_fields_context)
-            self.__class__.set_extra_fields(self, extra_fields_dict)
+        fields_context = self.context.get('fields', None)
+        if not fields_context:
+            extra_fields_context = self.context.get('extra_fields', None)
+            if extra_fields_context:
+                extra_fields_dict = self.context_to_dict(extra_fields_context)
+                self.__class__.set_extra_fields(self, extra_fields_dict)
 
-        exclude_fields_context = self.context.get('exclude_fields', None)
-        if exclude_fields_context:
-            exclude_fields_dict = self.context_to_dict(exclude_fields_context)
-            self.__class__.set_exclude_fields(self, exclude_fields_dict)
+            exclude_fields_context = self.context.get('exclude_fields', None)
+            if exclude_fields_context:
+                exclude_fields_dict = self.context_to_dict(exclude_fields_context)
+                self.__class__.set_exclude_fields(self, exclude_fields_dict)
 
-        only_fields_context = self.context.get('only_fields', None)
-        if only_fields_context:
-            only_fields_dict = self.context_to_dict(only_fields_context)
-            self.__class__.set_only_fields(self, only_fields_dict)
+            only_fields_context = self.context.get('only_fields', None)
+            if only_fields_context:
+                only_fields_dict = self.context_to_dict(only_fields_context)
+                self.__class__.set_only_fields(self, only_fields_dict)
+        else:
+            self.__class__.set_extra_fields(self, fields_context)
+            self.__class__.set_only_fields(self, fields_context)
 
 
     @classmethod
