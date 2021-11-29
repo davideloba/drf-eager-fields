@@ -1,3 +1,4 @@
+from django.db.models.query import Prefetch, QuerySet, prefetch_related_objects
 from rest_framework.generics import GenericAPIView
 
 from app.vendor.drf_dynamic_serializer.dynamic_serializer import is_many_serializer, is_model_serializer, is_serializer
@@ -25,36 +26,36 @@ class DynamicAPIView(GenericAPIView):
         return context
 
 
-    # def get_queryset(self):
-    #     """
-    #     TODO:
-    #     make fields prefetchable or
-    #     selectable to improve
-    #     database performance
-    #     """
-    #     queryset = super().get_queryset()
-    #     serializer = self.get_serializer()
-    #     d = {
-    #         'prefetch_related' : '',
-    #         'select_related' : ''
-    #     }
-    #     self._eager_load(serializer, d)
-    #     prefetch = d['prefetch_related'][:-1] if d['prefetch_related'] else None
-    #     select = d['select_related'][:-1] if d['select_related'] else None
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        serializer = self.get_serializer()
+        return self._eager_load(serializer, queryset)
 
-    #     queryset = queryset.select_related(select).prefetch_related(prefetch)
-    #     return queryset
 
-    # def _eager_load(self, serializer, d):
-    #     fields = serializer.child.fields if is_many_serializer(serializer) else serializer.fields
-    #     for k in fields.keys():
-    #         field = fields[k]
-    #         if is_serializer(field):
-    #             many = True if is_many_serializer(field) else False
-    #             if is_model_serializer(field if many else field.child):
-    #                 rel = getattr(serializer.Meta.model, field.source if field.source else k)
-    #                 if rel.field.many_to_many or rel.field.many_to_one:
-    #                     d['prefetch_related'] += rel.field.name + '.'
-    #                 elif rel.field.one_to_many or rel.field.one_to_one:
-    #                     d['select_related'] += rel.field.name + '.'
-    #             self._eager_load(field, d)
+    def _eager_load(self, serializer, cur_queryset):
+
+        fields = self._unplack(serializer, 'fields')
+        
+        for k in fields.keys():
+            field = fields[k]
+            if is_serializer(field):
+                if is_model_serializer(self._unplack(field)):
+                    source = field.source if field.source else k
+                    relation = self._unplack(serializer, 'Meta').model._meta.get_field(source)
+
+                    if relation.is_relation:
+                        extra_field = self._unplack(serializer, 'extra_fields').get(k, None)
+                        prefetch = extra_field.get('prefetch', None)  
+                        if prefetch and isinstance(prefetch, Prefetch):
+                            cur_queryset = cur_queryset.prefetch_related(
+                                Prefetch(relation.name,
+                                    queryset=self._eager_load(field, prefetch.queryset)
+                                )
+                            )
+        return cur_queryset
+
+
+    def _unplack(self, serializer, attr=None):
+        if attr is None:
+            return serializer.child if is_many_serializer(serializer) else serializer
+        return getattr(serializer.child, attr) if is_many_serializer(serializer) else getattr(serializer, attr)
