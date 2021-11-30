@@ -9,9 +9,11 @@ class DynamicAPIView(GenericAPIView):
 
     def get_serializer_context(self):
         """"
-        add our custom fields to the serializer context.
-        if found in query args take that
-        otherwise use the views parameters
+        Add our custom fields to the serializer context.
+        if found in query args take that,
+        otherwise use the views parameters.
+        In GET request, search for 'fields' in body
+        and save them in the serializer context
         """
         context = super().get_serializer_context()
 
@@ -21,7 +23,7 @@ class DynamicAPIView(GenericAPIView):
                 context[x] = params
             elif hasattr(self, 'serializer_' + x):
                 context[x] = getattr(self, 'serializer_' + x)
-        if self.request.data and self.request.data.get('fields', None):
+        if self.request.method == 'GET' and self.request.data and self.request.data.get('fields', None):
             context['fields'] = self.request.data['fields']
         return context
 
@@ -29,10 +31,10 @@ class DynamicAPIView(GenericAPIView):
     def get_queryset(self):
         queryset = super().get_queryset()
         serializer = self.get_serializer()
-        return self._eager_load(serializer, queryset)
+        return self._prefetch_queryset(serializer, queryset)
 
 
-    def _eager_load(self, serializer, cur_queryset):
+    def _prefetch_queryset(self, serializer, cur_queryset):
 
         fields = self._unplack(serializer, 'fields')
         
@@ -45,11 +47,15 @@ class DynamicAPIView(GenericAPIView):
 
                     if relation.is_relation:
                         extra_field = self._unplack(serializer, 'extra_fields').get(k, None)
-                        prefetch = extra_field.get('prefetch', None)  
+                        prefetch = extra_field.get('prefetch', None)
+
+                        if isinstance(prefetch, bool) and prefetch:
+                            prefetch = Prefetch(relation.name, queryset=field.Meta.model.objects.all())
+
                         if prefetch and isinstance(prefetch, Prefetch):
                             cur_queryset = cur_queryset.prefetch_related(
                                 Prefetch(relation.name,
-                                    queryset=self._eager_load(field, prefetch.queryset)
+                                    queryset=self._prefetch_queryset(field, prefetch.queryset)
                                 )
                             )
         return cur_queryset
