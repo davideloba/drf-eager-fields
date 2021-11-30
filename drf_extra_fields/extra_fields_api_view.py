@@ -1,19 +1,19 @@
-from django.db.models.query import Prefetch, QuerySet, prefetch_related_objects
+from django.db.models.query import Prefetch
 from rest_framework.generics import GenericAPIView
 
-from app.vendor.drf_dynamic_serializer.dynamic_serializer import is_many_serializer, is_model_serializer, is_serializer
+from .extra_fields_serializer import is_many_serializer, is_model_serializer, is_serializer
 
 
-class DynamicAPIView(GenericAPIView):
+class ExtraFieldsViewMixin(object):
 
 
     def get_serializer_context(self):
         """"
         Add our custom fields to the serializer context.
-        if found in query args take that,
-        otherwise use the views parameters.
+        If found '*_fields' in query args take those,
+        otherwise use the parameters set in the view.
         In GET request, search for 'fields' in body
-        and save them in the serializer context
+        and save them in the serializer context.
         """
         context = super().get_serializer_context()
 
@@ -65,3 +65,7 @@ class DynamicAPIView(GenericAPIView):
         if attr is None:
             return serializer.child if is_many_serializer(serializer) else serializer
         return getattr(serializer.child, attr) if is_many_serializer(serializer) else getattr(serializer, attr)
+
+
+class ExtraFieldsAPIView(ExtraFieldsViewMixin, GenericAPIView):
+    pass

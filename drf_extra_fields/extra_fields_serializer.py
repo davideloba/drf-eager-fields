@@ -14,7 +14,7 @@ def is_model_serializer(serializer):
     return isinstance(serializer, serializers.ModelSerializer)
 
 
-class DynamicSerializer(serializers.Serializer):
+class ExtraFieldsSerializerMixin(object):
 
     def __init__(self, *args, **kwargs):
 
@@ -185,3 +185,7 @@ class DynamicSerializer(serializers.Serializer):
 
         key = keys.pop(0)
         return key, keys
+
+
+class ExtraFieldsSerializer(ExtraFieldsSerializerMixin, serializers.Serializer):
+    pass
