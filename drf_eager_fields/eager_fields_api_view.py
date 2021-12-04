@@ -1,7 +1,7 @@
 from django.db.models.query import Prefetch
 from rest_framework.generics import GenericAPIView
 
-from .extra_fields_serializer import is_many_serializer, is_model_serializer, is_serializer
+from .eager_fields_serializer import is_many_serializer, is_model_serializer, is_serializer
 
 
 class EagerFieldsViewMixin(object):
@@ -17,7 +17,7 @@ class EagerFieldsViewMixin(object):
         """
         context = super().get_serializer_context()
 
-        for x in ['only_fields', 'exclude_fields', 'extra_fields']:
+        for x in ['only_fields', 'exclude_fields', 'eager_fields']:
             params = self.request.query_params.get(x, '')
             if params:
                 context[x] = params
@@ -46,8 +46,8 @@ class EagerFieldsViewMixin(object):
                     relation = self._unplack(serializer, 'Meta').model._meta.get_field(source)
 
                     if relation.is_relation:
-                        extra_field = self._unplack(self._unplack(serializer).Meta, 'extra_fields').get(k, None)
-                        prefetch = extra_field.get('prefetch', None)
+                        eager_field = self._unplack(self._unplack(serializer).Meta, 'eager_fields').get(k, None)
+                        prefetch = eager_field.get('prefetch', None)
 
                         if isinstance(prefetch, bool) and prefetch:
                             prefetch = Prefetch(relation.name, queryset=field.Meta.model.objects.all())
@@ -67,5 +67,5 @@ class EagerFieldsViewMixin(object):
         return getattr(serializer.child, attr) if is_many_serializer(serializer) else getattr(serializer, attr)
 
 
-class ExtraFieldsAPIView(ExtraFieldsViewMixin, GenericAPIView):
+class EagerFieldsAPIView(EagerFieldsViewMixin, GenericAPIView):
     pass

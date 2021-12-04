@@ -1,1 +1,1 @@
-# drf-extra-fields
+# drf-eager-fields

@@ -22,10 +22,10 @@ class EagerFieldsSerializerMixin(object):
 
         fields_context = self.context.get('fields', None)
         if not fields_context:
-            extra_fields_context = self.context.get('extra_fields', None)
-            if extra_fields_context:
-                extra_fields_dict = self.context_to_dict(extra_fields_context)
-                self.__class__.set_extra_fields(self, extra_fields_dict)
+            eager_fields_context = self.context.get('eager_fields', None)
+            if eager_fields_context:
+                eager_fields_dict = self.context_to_dict(eager_fields_context)
+                self.__class__.set_eager_fields(self, eager_fields_dict)
 
             exclude_fields_context = self.context.get('exclude_fields', None)
             if exclude_fields_context:
@@ -37,42 +37,42 @@ class EagerFieldsSerializerMixin(object):
                 only_fields_dict = self.context_to_dict(only_fields_context)
                 self.__class__.set_only_fields(self, only_fields_dict)
         else:
-            self.__class__.set_extra_fields(self, fields_context)
+            self.__class__.set_eager_fields(self, fields_context)
             self.__class__.set_only_fields(self, fields_context)
 
 
     @classmethod
-    def set_extra_fields(cls, serializer, extra_fields_dict):
+    def set_eager_fields(cls, serializer, eager_fields_dict):
 
         cur_ser = cls._get_cur_ser(serializer)
         if not cur_ser:
             return
 
-        extra_fields = getattr(cur_ser.Meta, 'extra_fields', None)
+        eager_fields = getattr(cur_ser.Meta, 'eager_fields', None)
 
-        # maybe this serializer doesn't define the extra_field property
-        if not extra_fields:
+        # maybe this serializer doesn't define the eager_field property
+        if not eager_fields:
             return
         
-        kk = extra_fields_dict.keys()
+        kk = eager_fields_dict.keys()
         for k in kk:
 
-            extra_field = extra_fields.get(k, None)
+            eager_field = eager_fields.get(k, None)
             
-            # extra field is not an extra fields of the current serializer
-            if not extra_field:
+            # eager field is not an eager fields of the current serializer
+            if not eager_field:
                 continue
 
             # empty dict is False then True means this is not a dict leaf
             # so go deeper if it's a serializer
-            nested_dict = extra_fields_dict[k]
-            nested_field = extra_field.get('field', None)
+            nested_dict = eager_fields_dict[k]
+            nested_field = eager_field.get('field', None)
             
             if nested_dict and is_serializer(nested_field):  
-                cls.set_extra_fields(nested_field, nested_dict)
+                cls.set_eager_fields(nested_field, nested_dict)
 
-            # now append the extra field to the serializer fields
-            cur_ser.fields[k] = extra_field['field']
+            # now append the eager field to the serializer fields
+            cur_ser.fields[k] = eager_field['field']
 
 
     @classmethod
@@ -190,5 +190,5 @@ class EagerFieldsSerializerMixin(object):
         return key, keys
 
 
-class ExtraFieldsSerializer(ExtraFieldsSerializerMixin, serializers.Serializer):
+class EagerFieldsSerializer(EagerFieldsSerializerMixin, serializers.Serializer):
     pass
