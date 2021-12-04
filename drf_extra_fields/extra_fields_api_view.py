@@ -4,13 +4,13 @@ from rest_framework.generics import GenericAPIView
 from .extra_fields_serializer import is_many_serializer, is_model_serializer, is_serializer
 
 
-class ExtraFieldsViewMixin(object):
+class EagerFieldsViewMixin(object):
 
 
     def get_serializer_context(self):
         """"
         Add our custom fields to the serializer context.
-        If found '*_fields' in query args take those,
+        If '*_fields' is found in query args take those,
         otherwise use the parameters set in the view.
         In GET request, search for 'fields' in body
         and save them in the serializer context.
@@ -46,7 +46,7 @@ class ExtraFieldsViewMixin(object):
                     relation = self._unplack(serializer, 'Meta').model._meta.get_field(source)
 
                     if relation.is_relation:
-                        extra_field = self._unplack(serializer, 'extra_fields').get(k, None)
+                        extra_field = self._unplack(self._unplack(serializer).Meta, 'extra_fields').get(k, None)
                         prefetch = extra_field.get('prefetch', None)
 
                         if isinstance(prefetch, bool) and prefetch:

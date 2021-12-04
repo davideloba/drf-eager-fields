@@ -14,7 +14,7 @@ def is_model_serializer(serializer):
     return isinstance(serializer, serializers.ModelSerializer)
 
 
-class ExtraFieldsSerializerMixin(object):
+class EagerFieldsSerializerMixin(object):
 
     def __init__(self, *args, **kwargs):
 
@@ -48,16 +48,18 @@ class ExtraFieldsSerializerMixin(object):
         if not cur_ser:
             return
 
+        extra_fields = getattr(cur_ser.Meta, 'extra_fields', None)
+
+        # maybe this serializer doesn't define the extra_field property
+        if not extra_fields:
+            return
+        
         kk = extra_fields_dict.keys()
         for k in kk:
 
-            # maybe this serializer doesn't define the extra_field property
-            if not cur_ser.extra_fields:
-                continue
-
-            extra_field = cur_ser.extra_fields.get(k, None)
+            extra_field = extra_fields.get(k, None)
             
-            # extra field is not an extra fields of the serializer
+            # extra field is not an extra fields of the current serializer
             if not extra_field:
                 continue
 
@@ -65,10 +67,11 @@ class ExtraFieldsSerializerMixin(object):
             # so go deeper if it's a serializer
             nested_dict = extra_fields_dict[k]
             nested_field = extra_field.get('field', None)
+            
             if nested_dict and is_serializer(nested_field):  
                 cls.set_extra_fields(nested_field, nested_dict)
 
-            # now append the extra field
+            # now append the extra field to the serializer fields
             cur_ser.fields[k] = extra_field['field']
 
 
