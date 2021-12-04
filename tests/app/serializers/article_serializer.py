@@ -9,18 +9,20 @@ class ArticleSerializer(serializers.ModelSerializer, EagerFieldsSerializer):
 
     class Meta:
         model = Article
-        fields = ('code', 'description', )
+        fields = ('id', 'code', 'description', )
 
         @classproperty
         def eager_fields(self):
             from .customer_serializer import CustomerSerializer
+            from .order_serializer import OrderSerializer
             return {
                 'customer' : {
                     'field': CustomerSerializer(),
                     'prefetch': True # default queryset=Customer.objects.all() 
                 },
-                'id': {
-                    'field': serializers.IntegerField()
+                'orders': {
+                    'field': OrderSerializer(many=True),
+                    'prefetch': True
                 }
             }
 

@@ -8,7 +8,7 @@ from ..models import Order
 class OrderSerializer(serializers.ModelSerializer, EagerFieldsSerializer):
 
     class Meta:
-        fields = ('code', 'created_at')
+        fields = ('code', 'description', 'created_at')
         model = Order
         
         @classproperty
@@ -18,6 +18,7 @@ class OrderSerializer(serializers.ModelSerializer, EagerFieldsSerializer):
             return {
                 'article' : {
                     'field': ArticleSerializer(),
+                    'prefetch': True
                 },
                 'customer': {
                     'field': CustomerSerializer(),

@@ -1,3 +1,6 @@
+import random
+import string
+
 from rest_framework.test import APITestCase
 from django.urls import reverse
 
@@ -26,8 +29,19 @@ class TestEagerFields(APITestCase):
         self.usa.customers.add(self.mario)
         self.italy.customers.add(self.mario)
 
-        self.willy_order = Order.objects.create(code='YUIOP', description='beep beep will be mine!', customer=self.willy, article=self.tnt)
-        self.mario_order = Order.objects.create(code='ZXCVB', description='very hungry bro..please hurry up!', customer=self.mario, article=self.pizza)
+        letters = string.ascii_lowercase
+
+        self.willy_orders = list()
+        for x in range(10):
+            code = ''.join(random.choice(letters) for i in range(5))
+            o = Order.objects.create(code=code, description='beep beep will be mine!', customer=self.willy, article=self.tnt)
+            self.willy_orders.append(o)
+
+        self.mario_orders = list()
+        for x in range(5):
+            code = ''.join(random.choice(letters) for i in range(5))
+            o = Order.objects.create(code=code, description='very hungry bro..please hurry up!', customer=self.mario, article=self.pizza)
+            self.mario_orders.append(o)
 
     def tearDown(self):
         Customer.objects.all().delete()
@@ -37,6 +51,7 @@ class TestEagerFields(APITestCase):
     def test_tnt(self):
         url = reverse('article-detail', kwargs={'pk': self.tnt.id})
 
+        only = 'code'
         res = self.client.get(f'{url}?only_fields=code', format="json")
         self.assertEqual(
             res.data,
@@ -45,7 +60,9 @@ class TestEagerFields(APITestCase):
             },
         )
 
-        res = self.client.get(f'{url}?eager_fields=customer&only_fields=code,customer.name', format="json")
+        eager = 'customer'
+        only = 'code,customer.name'
+        res = self.client.get(f'{url}?eager_fields={eager}&only_fields={only}', format="json")
         self.assertEqual(
             res.data,
             {
@@ -56,15 +73,30 @@ class TestEagerFields(APITestCase):
             },
         )
 
-        with self.assertNumQueries(4):
-            eager = 'orders.customer,customer.countries.region'
-            exclude = 'description,customer.countries.id'
-            res = self.client.get(f'{url}?eager_fields={eager}&exclude_fields={exclude}', format="json")
+        with self.assertNumQueries(6):
+            eager='orders.customer,customer.countries.region'
+            only='code,orders.description,orders.customer,customer.name,customer.id,customer.countries.name,customer.countries.region.name'
+            exclude='orders.customer.id'
+            res = self.client.get(f'{url}?eager_fields={eager}&exclude_fields={exclude}&only_fields={only}', format="json")
+
             self.assertEqual(
                 res.data,
                 {
                     "code": "TNT",
+                    "orders": [
+                        {"description": "beep beep will be mine!", "customer": { "name": "Willy" }},
+                        {"description": "beep beep will be mine!", "customer": { "name": "Willy" }},
+                        {"description": "beep beep will be mine!", "customer": { "name": "Willy" }},
+                        {"description": "beep beep will be mine!", "customer": { "name": "Willy" }},
+                        {"description": "beep beep will be mine!", "customer": { "name": "Willy" }},
+                        {"description": "beep beep will be mine!", "customer": { "name": "Willy" }},
+                        {"description": "beep beep will be mine!", "customer": { "name": "Willy" }},
+                        {"description": "beep beep will be mine!", "customer": { "name": "Willy" }},
+                        {"description": "beep beep will be mine!", "customer": { "name": "Willy" }},
+                        {"description": "beep beep will be mine!", "customer": { "name": "Willy" }},
+                    ],
                     "customer": {
+                        "id": 1,
                         "name": "Willy",
                         "countries": [
                             {
@@ -74,7 +106,7 @@ class TestEagerFields(APITestCase):
                                 }
                             },
                         ]
-                    }
+                    },
                 },
             )
     

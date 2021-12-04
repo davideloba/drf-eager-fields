@@ -50,7 +50,7 @@ class EagerFieldsViewMixin(object):
                         prefetch = eager_field.get('prefetch', None)
 
                         if isinstance(prefetch, bool) and prefetch:
-                            prefetch = Prefetch(relation.name, queryset=field.Meta.model.objects.all())
+                            prefetch = Prefetch(relation.name, queryset=self._unplack(field, 'Meta').model.objects.all())
 
                         if prefetch and isinstance(prefetch, Prefetch):
                             cur_queryset = cur_queryset.prefetch_related(

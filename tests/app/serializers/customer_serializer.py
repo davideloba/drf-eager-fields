@@ -9,7 +9,7 @@ from ..models import Customer
 class CustomerSerializer(serializers.ModelSerializer, EagerFieldsSerializer):
 
     class Meta:
-        fields = ('name',)
+        fields = ('id', 'name',)
         model = Customer
         
         @classproperty
@@ -19,6 +19,7 @@ class CustomerSerializer(serializers.ModelSerializer, EagerFieldsSerializer):
             return {
                 'articles' : {
                     'field': ArticleSerializer(many=True),
+                    'prefetch': True,
                 },
                 'countries': {
                     'field': CountrySerializer(many=True),
