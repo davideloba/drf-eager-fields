@@ -8,40 +8,7 @@ from ..models import Article, Customer, Country, Region, Order
 
 
 class TestEagerFields(APITestCase):
-    """
-    Test eager loading
-    """
-
-    def setUp(self):
-        self.willy = Customer.objects.create(name='Willy')
-        self.mario = Customer.objects.create(name='Mario')
-
-        self.tnt = Article.objects.create(code='TNT', customer=self.willy)
-        self.pizza = Article.objects.create(code='PIZZA', customer=self.mario)
-
-        self.europe=Region.objects.create(name='Europe')
-        self.america=Region.objects.create(name='America')
-
-        self.usa = Country.objects.create(name='USA', region=self.america)
-        self.italy = Country.objects.create(name='Italy', region=self.europe)
-
-        self.usa.customers.add(self.willy)
-        self.usa.customers.add(self.mario)
-        self.italy.customers.add(self.mario)
-
-        letters = string.ascii_lowercase
-
-        self.willy_orders = list()
-        for x in range(10):
-            code = ''.join(random.choice(letters) for i in range(5))
-            o = Order.objects.create(code=code, description='beep beep will be mine!', customer=self.willy, article=self.tnt)
-            self.willy_orders.append(o)
-
-        self.mario_orders = list()
-        for x in range(5):
-            code = ''.join(random.choice(letters) for i in range(5))
-            o = Order.objects.create(code=code, description='very hungry bro..please hurry up!', customer=self.mario, article=self.pizza)
-            self.mario_orders.append(o)
+    fixtures = ['test.yaml']
 
     def tearDown(self):
         Customer.objects.all().delete()
@@ -49,7 +16,7 @@ class TestEagerFields(APITestCase):
         Region.objects.all().delete()
 
     def test_tnt(self):
-        url = reverse('article-detail', kwargs={'pk': self.tnt.id})
+        url = reverse('article-detail', kwargs={'pk': 1}) # 1: TNT, see fixtures
 
         only = 'code'
         res = self.client.get(f'{url}?only_fields=code', format="json")
