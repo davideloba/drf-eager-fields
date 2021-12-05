@@ -1,10 +1,9 @@
 from django.db.models.query import Prefetch
 from django.utils.functional import classproperty
+from drf_eager_fields.serializers import EagerFieldsSerializer
 from rest_framework import serializers
 
 from ..models import Region
-
-from drf_eager_fields.eager_fields_serializer import EagerFieldsSerializer
 
 
 class RegionSerializer(serializers.ModelSerializer, EagerFieldsSerializer):

@@ -1,7 +1,7 @@
 from django.db.models.query import Prefetch
 from rest_framework.generics import GenericAPIView
 
-from .eager_fields_serializer import is_many_serializer, is_model_serializer, is_serializer
+from .serializers import is_many_serializer, is_model_serializer, is_serializer
 
 
 class EagerFieldsViewMixin(object):

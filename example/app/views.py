@@ -1,11 +1,8 @@
+from drf_eager_fields.views import EagerFieldsAPIView
 from rest_framework import generics
-from app.models import Article
+
+from .models import Article
 from .serializers.article_serializer import ArticleSerializer
-
-#TODO: CHANGE ME
-# from ...drf_eager_fields.eager_fields_api_view import EagerFieldsAPIView
-from drf_eager_fields.eager_fields_api_view import EagerFieldsAPIView
-
 
 
 class ArticleList(generics.ListCreateAPIView, EagerFieldsAPIView):

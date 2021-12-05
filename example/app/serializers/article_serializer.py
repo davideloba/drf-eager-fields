@@ -1,6 +1,6 @@
 from django.utils.functional import classproperty
 from rest_framework import serializers
-from drf_eager_fields.eager_fields_serializer import EagerFieldsSerializer
+from drf_eager_fields.serializers import EagerFieldsSerializer
 
 from ..models import Article
 
