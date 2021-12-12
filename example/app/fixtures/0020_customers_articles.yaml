@@ -1,0 +1,33 @@
+- model: app.customer
+  pk: 1
+  fields:
+    name: Willy
+- model: app.customer
+  pk: 2
+  fields:
+    name: Mario
+- model: app.customercountry
+  pk: 1
+  fields:
+    customer: 1
+    country: 2
+- model: app.customercountry
+  pk: 2
+  fields:
+    customer: 2
+    country: 1
+- model: app.customercountry
+  pk: 3
+  fields:
+    customer: 2
+    country: 2
+- model: app.article
+  pk: 1
+  fields:
+    code: TNT
+    customer: 1
+- model: app.article
+  pk: 2
+  fields:
+    code: PIZZA
+    customer: 2

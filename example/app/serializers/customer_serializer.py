@@ -7,23 +7,36 @@ from ..models import Customer
 
 
 class CustomerSerializer(serializers.ModelSerializer, EagerFieldsSerializer):
-
     class Meta:
-        fields = ('id', 'name',)
+        fields = (
+            "id",
+            "name",
+        )
         model = Customer
-        
+
         @classproperty
-        def eager_fields(self):
+        def extra(self):
             from .article_serializer import ArticleSerializer
             from .country_serializer import CountrySerializer
+
             return {
-                'articles' : {
-                    'field': ArticleSerializer(many=True),
-                    'prefetch': True,
+                "articles": {
+                    "field": ArticleSerializer(many=True),
+                    "prefetch": True,
                 },
-                'countries': {
-                    'field': CountrySerializer(many=True),
-                    'prefetch': Prefetch('countries', queryset=CountrySerializer.Meta.model.objects.all()),
-                }
+                "countries": {
+                    "field": CountrySerializer(many=True),
+                    "prefetch": Prefetch(
+                        "countries", queryset=CountrySerializer.Meta.model.objects.all()
+                    ),
+                },
             }
 
+
+class LazyCustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = (
+            "id",
+            "name",
+        )
+        model = Customer

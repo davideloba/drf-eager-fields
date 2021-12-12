@@ -1,70 +1,99 @@
+from django.db.models import query
 from django.db.models.query import Prefetch
 from rest_framework.generics import GenericAPIView
 
-from .serializers import is_many_serializer, is_model_serializer, is_serializer
+from .serializers import (
+    EagerFieldsSerializer,
+    EagerFieldsSerializerMixin,
+    is_many_serializer,
+    is_model_serializer,
+    is_serializer,
+)
 
 
 class EagerFieldsViewMixin(object):
-
-
     def get_serializer_context(self):
-        """"
+        """
         Add our custom fields to the serializer context.
-        If '*_fields' is found in query args take those,
+        If the fields keywords [extra, fields, exclude]
+        are found in query args take those,
         otherwise use the parameters set in the view.
-        In GET request, search for 'fields' in body
-        and save them in the serializer context.
+        In GET request, search for 'fields' dict in body
+        and save it in the serializer context,
+        overriding the view and query 'fields' params.
         """
         context = super().get_serializer_context()
 
-        for x in ['only_fields', 'exclude_fields', 'eager_fields']:
-            params = self.request.query_params.get(x, '')
+        for x in ["extra", "fields", "exclude"]:
+            params = self.request.query_params.get(x, "")
             if params:
                 context[x] = params
-            elif hasattr(self, 'serializer_' + x):
-                context[x] = getattr(self, 'serializer_' + x)
-        if self.request.method == 'GET' and self.request.data and self.request.data.get('fields', None):
-            context['fields'] = self.request.data['fields']
+            elif hasattr(self, "serializer_" + x):
+                context[x] = getattr(self, "serializer_" + x)
+        if (
+            self.request.method == "GET"
+            and self.request.data
+            and self.request.data.get("fields", None)
+        ):
+            context["body_fields"] = self.request.data["fields"]
         return context
-
 
     def get_queryset(self):
         queryset = super().get_queryset()
         serializer = self.get_serializer()
+        if not isinstance(serializer, EagerFieldsSerializer) or not isinstance(
+            serializer,
+            EagerFieldsSerializerMixin,
+        ):
+            return queryset
         return self._prefetch_queryset(serializer, queryset)
-
 
     def _prefetch_queryset(self, serializer, cur_queryset):
 
-        fields = self._unplack(serializer, 'fields')
-        
+        fields = self._unplack(serializer, "fields")
+
         for k in fields.keys():
             field = fields[k]
             if is_serializer(field):
                 if is_model_serializer(self._unplack(field)):
                     source = field.source if field.source else k
-                    relation = self._unplack(serializer, 'Meta').model._meta.get_field(source)
+                    relation = self._unplack(serializer, "Meta").model._meta.get_field(
+                        source
+                    )
 
                     if relation.is_relation:
-                        eager_field = self._unplack(self._unplack(serializer).Meta, 'eager_fields').get(k, None)
-                        prefetch = eager_field.get('prefetch', None)
+                        eager_field = self._unplack(
+                            self._unplack(serializer).Meta, "extra"
+                        ).get(k, None)
+                        prefetch = eager_field.get("prefetch", None)
 
                         if isinstance(prefetch, bool) and prefetch:
-                            prefetch = Prefetch(relation.name, queryset=self._unplack(field, 'Meta').model.objects.all())
+                            prefetch = Prefetch(
+                                relation.name,
+                                queryset=self._unplack(
+                                    field, "Meta"
+                                ).model.objects.all(),
+                            )
 
                         if prefetch and isinstance(prefetch, Prefetch):
                             cur_queryset = cur_queryset.prefetch_related(
-                                Prefetch(relation.name,
-                                    queryset=self._prefetch_queryset(field, prefetch.queryset)
+                                Prefetch(
+                                    relation.name,
+                                    queryset=self._prefetch_queryset(
+                                        field, prefetch.queryset
+                                    ),
                                 )
                             )
         return cur_queryset
 
-
     def _unplack(self, serializer, attr=None):
         if attr is None:
             return serializer.child if is_many_serializer(serializer) else serializer
-        return getattr(serializer.child, attr) if is_many_serializer(serializer) else getattr(serializer, attr)
+        return (
+            getattr(serializer.child, attr)
+            if is_many_serializer(serializer)
+            else getattr(serializer, attr)
+        )
 
 
 class EagerFieldsAPIView(EagerFieldsViewMixin, GenericAPIView):

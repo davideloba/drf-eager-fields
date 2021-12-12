@@ -7,17 +7,19 @@ from ..models import Region
 
 
 class RegionSerializer(serializers.ModelSerializer, EagerFieldsSerializer):
-
     class Meta:
-        fields = ('name',)
+        fields = ("name",)
         model = Region
-        
+
         @classproperty
-        def eager_fields(self):
+        def extra(self):
             from .country_serializer import CountrySerializer
+
             return {
-                'countries': {
-                    'field': CountrySerializer(many=True),
-                    'prefetch': Prefetch('countries', queryset=CountrySerializer.Meta.model.objects.all()),
+                "countries": {
+                    "field": CountrySerializer(many=True),
+                    "prefetch": Prefetch(
+                        "countries", queryset=CountrySerializer.Meta.model.objects.all()
+                    ),
                 }
             }

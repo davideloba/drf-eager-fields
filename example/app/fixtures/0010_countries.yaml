@@ -1,0 +1,18 @@
+- model: app.region
+  pk: 1
+  fields:
+    name: Europe
+- model: app.Region
+  pk: 2
+  fields:
+    name: America
+- model: app.Country
+  pk: 1
+  fields:
+    name: Italy
+    region: 1
+- model: app.Country
+  pk: 2
+  fields:
+    name: USA
+    region: 2
