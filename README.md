@@ -61,7 +61,7 @@ Imagine that you have a customer API that returns all its orders and, inside eac
         }
     ]
 
-This response have two problems: unwanted fields (we don't want ids, any customer's data except for the name,) and speed, because we have camed across the N+1 problems.
+This response has two problems: unwanted fields (we don't want ids, any customer's data except for the name,) and speed, because we have camed across the N+1 problems.
 
 ### Standard solution
 We can fix those issues by modifying the queryset in the view, adding all the prefetch stuff and creating another custom serializer to remove to annoing unnecessary fields. We must do this every time we want to return an even sligthly different response. In this case we want the article inside order, but in another case we just want the plain order's data without any other nested field, such as article.
