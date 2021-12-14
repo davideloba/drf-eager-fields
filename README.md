@@ -5,7 +5,7 @@ This library provides a dynamically fields selection and prefetching at the same
 ## Overview
 
 This library has the primary scope to handle the eager loading while providing a dynamic, nested, run-time selection of the fields to display.
-It's similiar to [drf-dynamic-fields](https://github.com/dbrgn/drf-dynamic-fields) and [drf-flex-fields](https://github.com/rsinger86/drf-flex-fields) great libraries, with the main aim of improving the poor database perfomances achieved when the fields to return are evaluted runtime and thus it's not possibile to hardcode a prefetchable queryset.
+It's similiar to [drf-dynamic-fields](https://github.com/dbrgn/drf-dynamic-fields) and [drf-flex-fields](https://github.com/rsinger86/drf-flex-fields) great libraries, with the main aim of improving the poor database perfomances achieved when the fields to return are evaluted runtime and thus it's not possible to hardcode a prefetchable queryset.
 It uses the capabaility of the "Prefetch" class of Django ORM to build the queryset on the fly.
 > I'd liked to name this library *dfr-extra-fields* but the name had been already stolen :disappointed: :smile:
 
@@ -365,7 +365,7 @@ Now, if you call
 
 ``GET /api/articles/?extra=last_10_orders``
 
-you will get only the last 10 prefetch orders, order by the date. :bomb: :bomb:
+you will get only the last 10 prefetch orders, ordered by the date. :bomb: :bomb:
 > Sorry for the complex queryset but, as far as I know, in Django you cannot limit the queryset directly if you want to keep it as queryset for further extension, so you have to nest a subquery to get the latest ids.
 
 ## Example and testing
