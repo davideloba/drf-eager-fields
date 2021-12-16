@@ -15,7 +15,7 @@ Features:
 - optional Json to represent the wanted response structure
 - works with model serializers and standard ones
 - setup the response inside the view for a complete serializers reusability
-- **prefetching of dynamically selected fields to decouple the number of queries from the number of rows (fix the N+1 problem)**
+- **prefetching of dynamically selected fields to decouple the number of queries (fix the N+1 problem)**
 - custom prefetch queryset to filter the related dataset in the serializer definition
 
 ## Install
@@ -61,7 +61,7 @@ Imagine that you have a customer API that returns all its orders and, inside eac
         }
     ]
 
-This response has two problems: unwanted fields (we don't want ids, any customer's data except for the name,) and speed, because we have camed across the N+1 problems.
+This response has two problems: unwanted fields (we don't want ids, any customer's data except for the name) and speed, because we have camed across the N+1 problems.
 
 ### Standard solution
 We can fix those issues by modifying the queryset in the view, adding all the prefetch stuff and creating another custom serializer to remove to annoing unnecessary fields. We must do this every time we want to return an even sligthly different response. In this case we want the article inside order, but in another case we just want the plain order's data without any other nested field, such as article.
@@ -329,7 +329,7 @@ If you set the property "prefetch" in your `extra` dictionary, the queryset will
         "prefetch": Prefetch("countries", queryset=CountrySerializer.Meta.model.objects.all())
     }
 
-If you set the ``prefetch`` attribute in every serializer, this librarythis library will compose the prefetched queryset for you, even for the nested fields. :bomb:
+If you set the ``prefetch`` attribute in every serializer, this library will compose the prefetched queryset for you, even for the nested fields. :bomb:
 
 > *Prefetch class* or *prefetch_related* is mandatory in Django to prefetching the related objects from the "many" side of the relationship (many-to-one and many-to-many). On the "one" side, you should use *select_related*. However I chose to use the *Prefetch class* for both, as recommended by Django documentation in cases where *you want to use a QuerySet that performs further prefetching on related models* or *you want to prefetch only a subset of the related objects.*
 
