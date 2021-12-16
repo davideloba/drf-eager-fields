@@ -41,7 +41,7 @@ class EagerFieldsViewMixin(object):
     def get_queryset(self):
         queryset = super().get_queryset()
         serializer = self.get_serializer()
-        if not isinstance(serializer, EagerFieldsSerializer) or not isinstance(
+        if not isinstance(serializer, EagerFieldsSerializer) and not isinstance(
             serializer,
             EagerFieldsSerializerMixin,
         ):
