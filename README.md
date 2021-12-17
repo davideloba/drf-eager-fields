@@ -373,8 +373,23 @@ You can run an example Django DRF application inside ``example`` folder
 
     $ python manage.py runserver 0.0.0.0:8000
 
-In that folder, to run the tests
+Apply migrations
 
+    $ python manage.py migrate
+
+To setup the database with data for your local experiments
+
+    $ python manage.py loaddata app/fixtures/0010_countries.yaml app/fixtures/0020_customers_articles.yaml  app/fixtures/0030_orders.yaml
+
+To clean up yor mess and start with a clean database just use the following command:
+
+    $ python manage.py clean_models
+
+In app folder, to run the tests
+    
+    # The databse must be in a clean state to perform tests, so before startiong them make sure  to clean it
+    $ python manage.py clean_db
+    # Run tests
     $ python manage.py test
 
 ## Credits
