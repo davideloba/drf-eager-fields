@@ -4,12 +4,13 @@ from rest_framework import generics
 from .models import Article, Customer
 from .serializers.article_serializer import ArticleSerializer, LazyArticleSerializer
 from .serializers.customer_serializer import CustomerSerializer
+from .serializers.data_serializers import DataArticleSerializer
 
 
 class ArticleList(generics.ListCreateAPIView, EagerFieldsAPIView):
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
-    serializer_extra = "order.customer, customer.country"
+    serializer_extra = "orders.customer, customer.country"
     # serializer_fields =
     # serializer_exclude =
 
@@ -17,7 +18,7 @@ class ArticleList(generics.ListCreateAPIView, EagerFieldsAPIView):
 class ArticleDetail(generics.RetrieveAPIView, EagerFieldsAPIView):
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
-    serializer_extra = "order.customer, customer.country"
+    serializer_extra = "orders.customer, customer.country"
     # serializer_fields =
     # serializer_exclude_fields =
 
@@ -29,14 +30,20 @@ class LazyArticleList(generics.ListCreateAPIView, EagerFieldsAPIView):
 
 class CustomerList(generics.ListCreateAPIView, EagerFieldsAPIView):
     queryset = Customer.objects.all()
-    serializer_class = CustomerSerializer()
+    serializer_class = CustomerSerializer
 
 
 class CustomerDetail(generics.RetrieveAPIView, EagerFieldsAPIView):
     queryset = Customer.objects.all()
-    serializer_class = CustomerSerializer()
+    serializer_class = CustomerSerializer
 
 
 class LazyCustomerDetail(generics.RetrieveAPIView, EagerFieldsAPIView):
     queryset = Customer.objects.all()
-    serializer_class = CustomerSerializer()
+    serializer_class = CustomerSerializer
+
+
+class DataArticlesList(generics.ListAPIView, EagerFieldsAPIView):
+    queryset = Article.objects.all()
+    serializer_class = DataArticleSerializer
+    serializer_extra = "customer.countries.region, last_10_orders"
