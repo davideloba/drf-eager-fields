@@ -49,30 +49,37 @@ class EagerFieldsViewMixin(object):
         return self._prefetch_queryset(serializer, queryset)
 
     def _prefetch_queryset(self, serializer, cur_queryset):
+        """
+        This will work only for model serializers.
+        This will not work if the root serializer is not a model one
+        and it will stop at the end of the model serializers chain
+        """
 
-        fields = self._unplack(serializer, "fields")
+        fields = self._pluck(serializer, "fields")
 
         for k in fields.keys():
             field = fields[k]
             if is_serializer(field):
-                if is_model_serializer(self._unplack(field)):
+                if is_model_serializer(serializer) and is_model_serializer(
+                    self._pluck(field)
+                ):
                     source = field.source if field.source else k
-                    relation = self._unplack(serializer, "Meta").model._meta.get_field(
+                    relation = self._pluck(serializer, "Meta").model._meta.get_field(
                         source
                     )
 
                     if relation.is_relation:
-                        eager_field = self._unplack(
-                            self._unplack(serializer).Meta, "extra"
+                        eager_field = self._pluck(
+                            self._pluck(serializer).Meta, "extra"
                         ).get(k, None)
-                        prefetch = eager_field.get("prefetch", None)
+                        prefetch = (
+                            eager_field.get("prefetch", None) if eager_field else None
+                        )
 
-                        if isinstance(prefetch, bool) and prefetch:
+                        if prefetch and isinstance(prefetch, bool):
                             prefetch = Prefetch(
                                 relation.name,
-                                queryset=self._unplack(
-                                    field, "Meta"
-                                ).model.objects.all(),
+                                queryset=self._pluck(field, "Meta").model.objects.all(),
                             )
 
                         if prefetch and isinstance(prefetch, Prefetch):
@@ -86,7 +93,7 @@ class EagerFieldsViewMixin(object):
                             )
         return cur_queryset
 
-    def _unplack(self, serializer, attr=None):
+    def _pluck(self, serializer, attr=None):
         if attr is None:
             return serializer.child if is_many_serializer(serializer) else serializer
         return (
