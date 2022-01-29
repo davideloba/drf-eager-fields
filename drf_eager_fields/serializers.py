@@ -14,7 +14,12 @@ def is_serializer(serializer):
 
 
 def is_model_serializer(serializer):
-    return isinstance(serializer, serializers.ModelSerializer)
+    ser = serializer.child if is_many_serializer(serializer) else serializer
+    return (
+        isinstance(ser, serializers.ModelSerializer)
+        and hasattr(ser, "Meta")
+        and hasattr(ser.Meta, "model")
+    )
 
 
 class EagerFieldsSerializerMixin(object):
@@ -48,40 +53,35 @@ class EagerFieldsSerializerMixin(object):
     @classmethod
     def set_extra_fields(cls, serializer, extra_fields_dict):
 
-        cur_ser = cls._get_cur_ser(serializer)
-        if not cur_ser:
-            return
-
-        extra_fields = getattr(cur_ser.Meta, "extra", None)
-
-        # maybe this serializer doesn't define the eager_field property
-        if not extra_fields:
+        current_serializer = cls._get_current_serializer(serializer)
+        if not current_serializer:
             return
 
         kk = extra_fields_dict.keys()
         for k in kk:
 
-            eager_field = extra_fields.get(k, None)
+            nested_dict = extra_fields_dict[k]
 
-            # eager field is not an eager fields of the current serializer
-            if not eager_field:
-                continue
+            extra_field = cls._get_extra_field(current_serializer, k)
+
+            if not extra_field:
+                return
 
             # empty dict is False then True means this is not a dict leaf
             # so go deeper if it's a serializer
-            nested_dict = extra_fields_dict[k]
-            nested_field = eager_field.get("field", None)
+            if nested_dict and is_serializer(extra_field):
+                cls.set_extra_fields(extra_field, nested_dict)
 
-            if nested_dict and is_serializer(nested_field):
-                cls.set_extra_fields(nested_field, nested_dict)
-
-            # now append the eager field to the serializer fields
-            cur_ser.fields[k] = eager_field["field"]
+            # now append the extra field to the serializer fields
+            # if already in fields, this means it's a standard one,
+            # no need to append it
+            if k not in current_serializer.fields.keys():
+                current_serializer.fields[k] = extra_field
 
     @classmethod
     def set_exclude_fields(cls, serializer, exclude_fields_dict):
 
-        cur_ser = cls._get_cur_ser(serializer)
+        cur_ser = cls._get_current_serializer(serializer)
         if not cur_ser:
             return
 
@@ -98,7 +98,7 @@ class EagerFieldsSerializerMixin(object):
     @classmethod
     def set_fields(cls, serializer, fields_dict):
 
-        cur_ser = cls._get_cur_ser(serializer)
+        cur_ser = cls._get_current_serializer(serializer)
         if not cur_ser:
             return
 
@@ -116,10 +116,29 @@ class EagerFieldsSerializerMixin(object):
             cur_ser.fields.pop(x)
 
     @classmethod
-    def _get_cur_ser(cls, serializer):
+    def _get_current_serializer(cls, serializer):
         if not is_serializer(serializer):
             return None  # this should never occur
         return serializer.child if is_many_serializer(serializer) else serializer
+
+    @classmethod
+    def _get_extra_field(cls, serializer, key):
+        """
+        Get the extra field from serializer.
+        If not found in Meta.extra, try with the standard fields
+        """
+        extra_fields = (
+            getattr(serializer.Meta, "extra", None)
+            if hasattr(serializer, "Meta")
+            else None
+        )
+
+        extra_field = extra_fields.get(key, None) if extra_fields else None
+        if extra_field:
+            return extra_field.get("field", None)
+
+        extra_field = serializer.fields.get(key, None)
+        return extra_field
 
     def context_to_dict(self, context) -> dict:
         """
