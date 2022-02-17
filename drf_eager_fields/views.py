@@ -1,4 +1,4 @@
-from django.db.models import query
+from django.db import models
 from django.db.models.query import Prefetch
 from rest_framework.generics import GenericAPIView
 
@@ -64,11 +64,11 @@ class EagerFieldsViewMixin(object):
                     self._pluck(field)
                 ):
                     source = field.source if field.source else k
-                    relation = self._pluck(serializer, "Meta").model._meta.get_field(
-                        source
+                    relation = self._get_relation(
+                        self._pluck(serializer, "Meta").model, source
                     )
 
-                    if relation.is_relation:
+                    if relation and relation.is_relation:
                         eager_field = self._pluck(
                             self._pluck(serializer).Meta, "extra"
                         ).get(k, None)
@@ -101,6 +101,13 @@ class EagerFieldsViewMixin(object):
             if is_many_serializer(serializer)
             else getattr(serializer, attr)
         )
+
+    def _get_relation(self, model, source):
+        """catch get_field exception here, this field could be just a custom model's property"""
+        try:
+            return model._meta.get_field(source)
+        except models.options.FieldDoesNotExist:
+            return None
 
 
 class EagerFieldsAPIView(EagerFieldsViewMixin, GenericAPIView):
