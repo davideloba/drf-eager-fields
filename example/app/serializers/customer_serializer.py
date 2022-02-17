@@ -24,6 +24,9 @@ class CustomerSerializer(serializers.ModelSerializer, EagerFieldsSerializer):
                     "field": ArticleSerializer(many=True),
                     "prefetch": True,
                 },
+                "filtered_articles": {
+                    "field": ArticleSerializer(many=True),
+                },
                 "countries": {
                     "field": CountrySerializer(many=True),
                     "prefetch": Prefetch(

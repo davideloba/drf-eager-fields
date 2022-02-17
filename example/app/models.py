@@ -5,6 +5,11 @@ from django.db import models
 class Customer(models.Model):
     name = models.CharField(max_length=20)
 
+    @property
+    def filtered_articles(self):
+        """Make a custom filter"""
+        return self.articles.filter(code__startswith="S")
+
 
 class Region(models.Model):
     name = models.CharField(max_length=20)

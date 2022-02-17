@@ -67,5 +67,17 @@ class TestBodyFields(APITestCase):
                         ],
                     },
                 },
+                {
+                    "code": "SIGN",
+                    "customer": {
+                        "name": "Willy",
+                        "countries": [
+                            {
+                                "name": "USA",
+                                "region": {"countries": [{"id": 2, "name": "USA"}]},
+                            }
+                        ],
+                    },
+                },
             ],
         )

@@ -31,3 +31,8 @@
   fields:
     code: PIZZA
     customer: 2
+- model: app.article
+  pk: 3
+  fields:
+    code: SIGN
+    customer: 1
