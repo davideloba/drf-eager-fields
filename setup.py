@@ -12,7 +12,7 @@ def readme():
 setup(
     name="drf_eager_fields",
     packages=["drf_eager_fields"],
-    version="0.0.4",
+    version="0.0.5",
     license="MIT",
     description="Eager load fields dynamically requested for Django REST Framework",
     long_description=readme(),
