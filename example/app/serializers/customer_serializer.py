@@ -29,9 +29,14 @@ class CustomerSerializer(serializers.ModelSerializer, EagerFieldsSerializer):
                 },
                 "countries": {
                     "field": CountrySerializer(many=True),
-                    "prefetch": Prefetch(
-                        "countries", queryset=CountrySerializer.Meta.model.objects.all()
-                    ),
+                    "prefetch": Prefetch("countries", queryset=CountrySerializer.Meta.model.objects.all()),
+                },
+                "description": {
+                    "field": serializers.CharField(),
+                    "prefetch": [
+                        Prefetch('countries', queryset=CountrySerializer.Meta.model.objects.all()),
+                        Prefetch('articles', queryset=ArticleSerializer.Meta.model.objects.all()),
+                    ],
                 },
             }
 
