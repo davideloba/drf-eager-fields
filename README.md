@@ -121,15 +121,15 @@ This is an example of the eager serializers:
             models = models.Article
             fields = ('id', 'code')
         
-        @classproperty
-        def extra(self):
-            from .customer_serializers import CustomerSerializer
-            return {
-                "customer": {
-                    "field": CustomerSerializer(),
-                    "prefetch": True # see below
+            @classproperty
+            def extra(self):
+                from .customer_serializers import CustomerSerializer
+                return {
+                    "customer": {
+                        "field": CustomerSerializer(),
+                        "prefetch": True # see below
+                    }
                 }
-            }
     
     # customer_serializer.py
     class CustomerSerializer(EagerFieldsMixin, serializers.ModelSerializer):
@@ -138,15 +138,15 @@ This is an example of the eager serializers:
             models = models.Customer
             fields = ('id', 'name')
         
-        @classproperty
-        def extra(self):
-            from .countries_serializers import CountrySerializer
-            return {
-                "countries": {
-                    "field": CountrySerializer(many=True),
-                    "prefetch": True # see below
-                }
-            } 
+            @classproperty
+            def extra(self):
+                from .countries_serializers import CountrySerializer
+                return {
+                    "countries": {
+                        "field": CountrySerializer(many=True),
+                        "prefetch": True # see below
+                    }
+                } 
 
 
 ``GET /api/articles/``
@@ -337,7 +337,7 @@ If you set the ``prefetch`` attribute in every serializer, this library will com
 The prefetch attribute can accept a bool or a Prefetch object where you
 can declare your queryset. Let me show you an example with the article API: image that you just want to show the related orders, but only the last 10 orders, and of course, prefetch them.
 
-       @classproperty
+        @classproperty
         def extra(self):
             from .order_serializer import OrderSerializer
 
