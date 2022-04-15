@@ -1,11 +1,14 @@
 # Changelog
 
 
+## [0.0.8] - 2022-04-15
+## [0.0.7] - 2022-04-15
 ## [0.0.6] - 2022-04-15
 ### Added
 - "get_attr" and "get_ser" methods
 ### Fixed
 - Missing "extra" field case handled
+- Readme
 ### Removed
 - "_pluck" method
 
