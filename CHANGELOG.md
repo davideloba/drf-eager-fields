@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [0.0.6] - 2022-04-15
+### Added
+- "get_attr" and "get_ser" methods
+### Fixed
+- Missing "extra" field case handled
+### Removed
+- "_pluck" method
+
 ## [0.0.5] - 2022-04-05
 ### Added
 - Prefetch capability added even for "simple" fields.
