@@ -1,3 +1,4 @@
+from django.db import models
 from rest_framework import serializers
 
 
@@ -14,12 +15,24 @@ def is_serializer(serializer):
 
 
 def is_model_serializer(serializer):
-    ser = serializer.child if is_many_serializer(serializer) else serializer
-    return (
-        isinstance(ser, serializers.ModelSerializer)
-        and hasattr(ser, "Meta")
-        and hasattr(ser.Meta, "model")
-    )
+    ser = get_ser(serializer)
+    return isinstance(ser, serializers.ModelSerializer) and hasattr(ser, "Meta") and hasattr(ser.Meta, "model")
+
+
+def get_ser(serializer):
+    return serializer.child if is_many_serializer(serializer) else serializer
+
+
+def get_attr(serializer, attr):
+    return getattr(get_ser(serializer), attr, None)
+
+
+def get_rel(model, source):
+    """catch get_field exception here, this field could be just a custom model's property"""
+    try:
+        return model._meta.get_field(source)
+    except models.options.FieldDoesNotExist:
+        return None
 
 
 class EagerFieldsSerializerMixin(object):
@@ -127,11 +140,7 @@ class EagerFieldsSerializerMixin(object):
         Get the extra field from serializer.
         If not found in Meta.extra, try with the standard fields
         """
-        extra_fields = (
-            getattr(serializer.Meta, "extra", None)
-            if hasattr(serializer, "Meta")
-            else None
-        )
+        extra_fields = getattr(serializer.Meta, "extra", None) if hasattr(serializer, "Meta") else None
 
         extra_field = extra_fields.get(key, None) if extra_fields else None
         if extra_field:
@@ -145,11 +154,11 @@ class EagerFieldsSerializerMixin(object):
         Get string params from context
         and merge them in a nested dict
         """
-        l = self._string_to_list(context)
-        d = dict()
-        for kk in l:
-            self._list_to_dict(kk, d)
-        return d
+        ll = self._string_to_list(context)
+        dd = dict()
+        for kk in ll:
+            self._list_to_dict(kk, dd)
+        return dd
 
     def _string_to_list(self, context) -> list:
         return [f.strip() for f in context.split(",")]
@@ -179,10 +188,10 @@ class EagerFieldsSerializerMixin(object):
         """
         item, remaing_list = self._get_key_and_list(keys)
         if not len(remaing_list):
-            if not item in store_dict:
+            if item not in store_dict:
                 store_dict[item] = dict()
         else:
-            if not item in store_dict:
+            if item not in store_dict:
                 store_dict[item] = dict()
             else:
                 store_dict[item] = dict(dict(), **store_dict[item])
