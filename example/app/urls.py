@@ -10,9 +10,6 @@ urlpatterns = [
     path("data/articles/", views.DataArticlesList.as_view(), name="data-articles"),
     path("customers/", views.CustomerList.as_view(), name="customers-list"),
     path("customers/<int:pk>/", views.CustomerDetail.as_view(), name="customer-detail"),
-    path(
-        "lazy/customers/<int:pk>/",
-        views.LazyCustomerDetail.as_view(),
-        name="lazy-customer-deail",
-    ),
+    path("lazy/customers/<int:pk>/", views.LazyCustomerDetail.as_view(), name="lazy-customer-deail"),
+    path("mixed/countries", views.MixedCountryList.as_view(), name="mixed-countries-list"),
 ]

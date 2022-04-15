@@ -1,11 +1,15 @@
 # Changelog
 
 
-## [0.0.4] - 2017-02-17
+## [0.0.5] - 2022-04-05
+### Added
+- Prefetch capability added even for "simple" fields.
+
+## [0.0.4] - 2022-02-17
 ### Fixed
 - get_field error catched when field is not a model one. 
 
-## [0.0.3] - 2020-02-01
+## [0.0.3] - 2022-02-01
 ### Added
 - Changelog added.
 ### Fixed
