@@ -59,7 +59,7 @@ class EagerFieldsViewMixin(object):
 
         for k in fields.keys():
             field = fields[k]
-            source = field.source if field.source else k
+            source = field.source.split('.')[0] if field.source else k
             eager_field = ser_extra.get(k, None)
             prefetch = eager_field.get("prefetch", None) if eager_field else None
 
